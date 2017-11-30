@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.example.dsalov2.simplenotifications">
+
+    <application
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="Simple Reminders"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/AppTheme">
+        <activity android:name=".AuthenticationActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <receiver android:name=".NotifyReceiver" />
+
+        <activity android:name=".NewGroupActivity" />
+        <activity android:name=".GroupDetailsActivity" />
+        <activity android:name=".NewReminderActivity" />
+        <activity android:name=".ReminderDetailsActivity" />
+        <activity android:name=".MainActivity"></activity>
+    </application>
+
+</manifest>

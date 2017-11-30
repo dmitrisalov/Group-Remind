@@ -1,0 +1,57 @@
+package com.example.dsalov2.simplenotifications;
+
+import android.support.v7.app.AppCompatActivity;
+import android.os.Bundle;
+import android.view.View;
+import android.widget.CompoundButton;
+import android.widget.EditText;
+import android.widget.Switch;
+import android.widget.TextView;
+
+/**
+ * This is the activity that is used to create new reminders.
+ */
+public class ReminderActivity extends AppCompatActivity {
+    Switch setNotificationSwitch;
+    TextView dateTextView;
+    TextView timeTextView;
+    EditText dateEditText;
+    EditText timeEditText;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_reminder);
+
+        setNotificationSwitch = (Switch) findViewById(R.id.setNotificationSwitch);
+        dateTextView = (TextView) findViewById(R.id.dateTextView);
+        timeTextView = (TextView) findViewById(R.id.timeTextView);
+        dateEditText = (EditText) findViewById(R.id.dateEditText);
+        timeEditText = (EditText) findViewById(R.id.timeEditText);
+
+        dateTextView.setVisibility(View.INVISIBLE);
+        timeTextView.setVisibility(View.INVISIBLE);
+        dateEditText.setVisibility(View.INVISIBLE);
+        timeEditText.setVisibility(View.INVISIBLE);
+
+        //Determines what happens when the switch is checked or unchecked.
+        setNotificationSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                if (isChecked) {
+                    dateTextView.setVisibility(View.VISIBLE);
+                    timeTextView.setVisibility(View.VISIBLE);
+                    dateEditText.setVisibility(View.VISIBLE);
+                    timeEditText.setVisibility(View.VISIBLE);
+                }
+                else {
+                    dateTextView.setVisibility(View.INVISIBLE);
+                    timeTextView.setVisibility(View.INVISIBLE);
+                    dateEditText.setVisibility(View.INVISIBLE);
+                    timeEditText.setVisibility(View.INVISIBLE);
+                }
+            }
+        });
+    }
+}

@@ -1,0 +1,16 @@
+package com.example.dsalov2.simplenotifications;
+
+import android.support.v7.app.AppCompatActivity;
+import android.os.Bundle;
+
+/**
+ * This is the activity that is used to create new reminders.
+ */
+public class ReminderActivity extends AppCompatActivity {
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_reminder);
+    }
+}

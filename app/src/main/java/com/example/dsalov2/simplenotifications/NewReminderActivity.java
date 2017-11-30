@@ -1,0 +1,383 @@
+package com.example.dsalov2.simplenotifications;
+
+import java.util.Calendar;
+
+import android.app.Activity;
+import android.app.AlarmManager;
+import android.app.DatePickerDialog;
+import android.app.PendingIntent;
+import android.app.TimePickerDialog;
+import android.content.Context;
+import android.content.Intent;
+import android.support.v7.app.AppCompatActivity;
+import android.os.Bundle;
+import android.view.View;
+import android.widget.Button;
+import android.widget.CompoundButton;
+import android.widget.DatePicker;
+import android.widget.EditText;
+import android.widget.Switch;
+import android.widget.TimePicker;
+import android.widget.Toast;
+
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+
+/**
+ * Created by dsalov2 on 4/10/2017.
+ *
+ * Variables and methods used to create a new reminder and set a notification for that reminder.
+ */
+public class NewReminderActivity extends AppCompatActivity implements View.OnClickListener {
+    private final int DEFAULT = 0;  //Default code for creating broadcasting data.
+
+    private int currentDayOfMonth;
+    private int currentMonth;
+    private int currentYear;
+    private int currentHourOfDay;
+    private int currentMinute;
+
+    //These are the date/time values that are obtained from the date/time picker dialogs.
+    private int mDayOfMonth;
+    private int mMonth;
+    private int mYear;
+    private int mHourOfDay;
+    private int mMinute;
+
+    private String formattedDate;
+    private String formattedTime;
+
+    private Reminder reminder;
+    private Group group;
+
+    private Switch setNotificationSwitch;
+    private Button createReminderButton;
+    private Button dateButton;
+    private Button timeButton;
+    private EditText dateEditText;
+    private EditText timeEditText;
+    private EditText detailsEditText;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_new_reminder);
+
+        setNotificationSwitch = (Switch) findViewById(R.id.setNotificationSwitch);
+        createReminderButton = (Button) findViewById(R.id.createReminderButton);
+        dateButton = (Button) findViewById(R.id.dateButton);
+        timeButton = (Button) findViewById(R.id.timeButton);
+        dateEditText = (EditText) findViewById(R.id.dateEditText);
+        timeEditText = (EditText) findViewById(R.id.timeEditText);
+        detailsEditText = (EditText) findViewById(R.id.detailsEditText);
+        dateButton.setOnClickListener(this);
+        timeButton.setOnClickListener(this);
+        createReminderButton.setOnClickListener(this);
+        dateEditText.setFocusable(false);
+        timeEditText.setFocusable(false);
+
+        dateButton.setVisibility(View.INVISIBLE);
+        timeButton.setVisibility(View.INVISIBLE);
+        dateEditText.setVisibility(View.INVISIBLE);
+        timeEditText.setVisibility(View.INVISIBLE);
+
+        //Switches the visibility of views used for setting a date/time.
+        setNotificationSwitch.setOnCheckedChangeListener(
+                new CompoundButton.OnCheckedChangeListener() {
+
+            //Enables or disables date/time visibility on switch.
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                if (isChecked) {
+                    dateButton.setVisibility(View.VISIBLE);
+                    timeButton.setVisibility(View.VISIBLE);
+                    dateEditText.setVisibility(View.VISIBLE);
+                    timeEditText.setVisibility(View.VISIBLE);
+                }
+                else {
+                    dateButton.setVisibility(View.INVISIBLE);
+                    timeButton.setVisibility(View.INVISIBLE);
+                    dateEditText.setVisibility(View.INVISIBLE);
+                    timeEditText.setVisibility(View.INVISIBLE);
+                }
+            }
+        });
+
+        //Gets the group object that this reminder belongs to.
+        Intent intent = getIntent();
+        group = (Group) intent.getSerializableExtra("group");
+    }
+
+    /**
+     * Contains the methods to handle clicking on views.
+     *
+     * @param view
+     */
+    @Override
+    public void onClick(View view) {
+
+        //Choosing a date button.
+        if (view == dateButton) {
+            Calendar calendar = Calendar.getInstance();
+            currentDayOfMonth = calendar.DAY_OF_MONTH;
+            currentMonth = calendar.MONTH;
+            currentYear = calendar.YEAR;
+
+            //Opens a DatePicker when the button is pressed.
+            DatePickerDialog datePickerDialog = new DatePickerDialog(this,
+                    new DatePickerDialog.OnDateSetListener() {
+
+                        //Displays the date once it has been picked.
+                        @Override
+                        public void onDateSet(DatePicker view, int year, int month,
+                                              int dayOfMonth) {
+
+                            //Displaying the date in the EditText view.
+                            formattedDate = (month + 1) + "/" + dayOfMonth + "/" + year;
+                            dateEditText.setText(formattedDate);
+
+                            //Setting the class-wide variables.
+                            mDayOfMonth = dayOfMonth;
+                            mMonth = month;
+                            mYear = year;
+                        }
+                    }, currentYear, currentMonth, currentDayOfMonth);
+
+            datePickerDialog.getDatePicker().setMinDate(System.currentTimeMillis());
+            datePickerDialog.show();
+        }
+
+        //Choosing a time button.
+        if (view == timeButton) {
+            Calendar calendar = Calendar.getInstance();
+            currentHourOfDay = calendar.HOUR_OF_DAY;
+            currentMinute = calendar.MINUTE;
+
+            //Opens a TimePicker when button is pressed.
+            TimePickerDialog timePickerDialog = new TimePickerDialog(this,
+                    new TimePickerDialog.OnTimeSetListener() {
+
+                        @Override
+                        public void onTimeSet(TimePicker view, int hourOfDay, int minute) {
+
+                            //Displaying the time in the EditText view.
+                            formattedTime = formatHour(hourOfDay) + ":" +
+                                    formatMinute(minute) + " " + amOrPm(hourOfDay);
+                            timeEditText.setText(formattedTime);
+
+                            //Setting class-wide variables.
+                            mHourOfDay = hourOfDay;
+                            mMinute = minute;
+                        }
+                    }, currentHourOfDay, currentMinute, false);
+
+            //Sets the defalt displayed time to midnight.
+            timePickerDialog.updateTime(0, 0);
+
+            timePickerDialog.show();
+        }
+
+        //Creating a reminder button.
+        if (view == createReminderButton) {
+                    if (hasValidDetails()) {
+                        if (hasNotification()) {
+                            if (hasValidDateTime()) {
+                                createAndSendReminderToDatabase();
+                                setAlarm();
+                                sendNewReminder();
+                                finish();
+                            }
+                        }
+                        else {
+                            createAndSendReminderToDatabase();
+                            sendNewReminder();
+                            finish();
+                        }
+            }
+        }
+    }
+
+    /**
+     * Pushes the created reminder to the database. Then sets the reminder details with either a
+     * notification or no notification.
+     */
+    private void createAndSendReminderToDatabase() {
+
+        //Adds reminder to Firebase database.
+        DatabaseReference groupsReference = FirebaseDatabase.getInstance().getReference()
+                .child("groups");
+        DatabaseReference reminderReference = groupsReference.child(group.getFirebaseKey())
+                .child("reminders").push();
+
+        if (setNotificationSwitch.isChecked()) {
+            reminder = new Reminder(detailsEditText.getText().toString(), mDayOfMonth, mMonth,
+                    mYear, mHourOfDay, mMinute, formattedDate, formattedTime,
+                    reminderReference.getKey());
+
+            if (reminder.hasNotification()) {
+                reminderReference.child("month").setValue(reminder.getMonth());
+                reminderReference.child("dayOfMonth").setValue(reminder.getDayOfMonth());
+                reminderReference.child("year").setValue(reminder.getYear());
+                reminderReference.child("hourOfDay").setValue(reminder.getHourOfDay());
+                reminderReference.child("minute").setValue(reminder.getMinute());
+            }
+        }
+        else {
+            reminder = new Reminder(detailsEditText.getText().toString(),
+                    reminderReference.getKey());
+        }
+
+        reminderReference.child("details").setValue(reminder.getDetails());
+    }
+
+    /**
+     * Formats the hour of the day from 24-hour notation to 12-hour notation.
+     *
+     * @param hourOfDay
+     * @return String -- the formatted hour.
+     */
+    private String formatHour(int hourOfDay) {
+        String newHour = "" + hourOfDay;
+
+        if (hourOfDay == 0) {
+            newHour = "12";
+        }
+        else if (hourOfDay > 12) {
+            newHour = "" + (hourOfDay - 12);
+        }
+
+        return newHour;
+    }
+
+    /**
+     * Formats the minute to show two digits.
+     *
+     * @param minute
+     * @return String -- formatted minute.
+     */
+    private String formatMinute(int minute) {
+        String newMinute = "" + minute;
+
+        if (minute < 10) {
+            newMinute = "0" + newMinute;
+        }
+
+        return newMinute;
+    }
+
+    /**
+     * Determines whether the time is AM or PM.
+     *
+     * @param hourOfDay
+     * @return String -- AM or PM.
+     */
+    private String amOrPm(int hourOfDay) {
+        String amOrPm = "";
+
+        if (hourOfDay < 12) {
+            amOrPm = "AM";
+        }
+        else {
+            amOrPm = "PM";
+        }
+
+        return amOrPm;
+    }
+
+    /**
+     * Checks if details have been input.
+     *
+     * @return boolean
+     */
+    private boolean hasValidDetails() {
+        if (detailsEditText.getText().toString().isEmpty()) {
+            Toast.makeText(this, "You must provide details.", Toast.LENGTH_SHORT).show();
+
+            return false;
+        }
+        else {
+            return true;
+        }
+    }
+
+    /**
+     * Checks if a date and time has been input.
+     *
+     * @return boolean
+     */
+    private boolean hasValidDateTime() {
+        if (dateEditText.getText().toString().isEmpty() ||
+                timeEditText.getText().toString().isEmpty()) {
+            Toast.makeText(this, "You must provide a valid date and time.", Toast.LENGTH_SHORT).show();
+
+            return false;
+        }
+        else {
+            return true;
+        }
+    }
+
+    /**
+     * Adds the reminder details to the reminders list in GroupDetailsActivity and makes a toast message.
+     */
+    private void sendNewReminder() {
+        Toast.makeText(getApplicationContext(), "Reminder set.", Toast.LENGTH_SHORT);
+
+        //Creates an Intent to be sent back to the group details for setting a new reminder.
+        Intent resultIntent = new Intent();
+        resultIntent.putExtra("newReminder", reminder);
+        setResult(Activity.RESULT_OK, resultIntent);
+        Toast.makeText(this, "Reminder created.", Toast.LENGTH_SHORT).show();
+    }
+
+    /**
+     * Sets an alarm for the notification to go off at the specified time.
+     */
+    private void setAlarm() {
+        Long notifyTime = calculateTimeInMillis();
+
+        //Adds the reminder's details to the intent to be passed to NotifyReceiver.
+        Intent alarmIntent = new Intent(this, NotifyReceiver.class);
+        alarmIntent.putExtra("details", reminder.getDetails());
+
+        AlarmManager alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
+
+        //Setting an alarm to go off at the specified time.
+        alarmManager.set(AlarmManager.RTC_WAKEUP, notifyTime,
+                PendingIntent.getBroadcast(this, DEFAULT, alarmIntent,
+                        PendingIntent.FLAG_UPDATE_CURRENT));
+    }
+
+    /**
+     * Calculates the amount of time after which the alarm should go off.
+     *
+     * @return Long -- Time in milliseconds.
+     */
+    private Long calculateTimeInMillis() {
+        Calendar date = Calendar.getInstance();
+        date.set(Calendar.DAY_OF_MONTH, reminder.getDayOfMonth());
+        date.set(Calendar.MONTH, reminder.getMonth());
+        date.set(Calendar.YEAR, reminder.getYear());
+        date.set(Calendar.HOUR_OF_DAY, reminder.getHourOfDay());
+        date.set(Calendar.MINUTE, reminder.getMinute());
+
+        //This is so that the alarm goes off at exactly the start of a minute, not in the middle.
+        date.set(Calendar.SECOND, 0);
+
+        return date.getTimeInMillis();
+    }
+
+    /**
+     * Returns whether or not a notification is being set.
+     *
+     * @return true if a notification is being set.
+     */
+    private boolean hasNotification() {
+        if (setNotificationSwitch.isChecked()) {
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
+}

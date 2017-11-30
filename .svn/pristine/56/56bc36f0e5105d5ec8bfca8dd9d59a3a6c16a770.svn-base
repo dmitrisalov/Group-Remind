@@ -1,0 +1,43 @@
+package com.example.dsalov2.simplenotifications;
+
+/**
+ * Created by dsalov2 on 4/10/2017.
+ *
+ * This class holds all of the information to be displayed and used for reminders.
+ */
+public class Reminder {
+    boolean hasNotification;
+    String details;
+    String date;
+    String time;
+
+    public Reminder(String details) {
+        hasNotification = false;
+        this.details = details;
+        this.date = null;
+        this.time = null;
+    }
+
+    public Reminder(String details, String date, String time) {
+        hasNotification = true;
+        this.details = details;
+        this.date = date;
+        this.time = time;
+    }
+
+    public boolean getMakeNotification() {
+        return hasNotification;
+    }
+
+    public String getDetails() {
+        return details;
+    }
+
+    public String getDate() {
+        return date;
+    }
+
+    public String getTime() {
+        return time;
+    }
+}

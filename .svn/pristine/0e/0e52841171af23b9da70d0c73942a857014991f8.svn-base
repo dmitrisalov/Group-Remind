@@ -1,0 +1,107 @@
+package com.example.dsalov2.simplenotifications;
+
+import android.app.Activity;
+import android.content.Intent;
+import android.support.v7.app.AppCompatActivity;
+import android.os.Bundle;
+import android.util.Log;
+import android.view.View;
+import android.widget.ArrayAdapter;
+import android.widget.Button;
+import android.widget.ListView;
+import android.widget.TextView;
+
+import java.util.ArrayList;
+
+/**
+ * Created by dsalov2 on 4/10/2017.
+ *
+ * TODO Add ability to click on list items for more details.
+ *
+ * Note: Firebase lines were added to the Gradle build files for practice. It is not actually used
+ * in this project.
+ */
+public class GroupDetailsActivity extends AppCompatActivity {
+    private final int REQUEST_CODE = 0;
+    public static ArrayList<Reminder> remindersList = new ArrayList<>();
+    ListView remindersListView;
+    ArrayAdapter<Reminder> remindersAdapter;
+
+    TextView groupNameTextView;
+    Button newReminderButton;
+
+    int positionInList;
+    Reminder newReminder;
+    Group group;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_group_details);
+
+        groupNameTextView = (TextView) findViewById(R.id.groupNameTextView);
+        newReminderButton = (Button) findViewById(R.id.newReminderButton);
+
+        //Creates a new Group object out of what was clicked on in the list in MainActivity.
+        Intent intent = getIntent();
+        group = (Group) intent.getSerializableExtra("groupItem");
+        positionInList = intent.getIntExtra("position", 0);
+
+        //Displays group information.
+        groupNameTextView.setText(group.getName());
+
+        //Adds any reminders that already exist.
+        copyRemindersFromGroup();
+
+        //Creates a ListView and adapter, and links the adapter to the ListView.
+        remindersListView = (ListView) findViewById(R.id.remindersListView);
+        remindersAdapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1,
+                remindersList);
+        remindersListView.setAdapter(remindersAdapter);
+
+        newReminderButton.setOnClickListener(new View.OnClickListener() {
+
+            //Opens NewReminderActivity to allow users to create a new reminder.
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(GroupDetailsActivity.this, NewReminderActivity.class);
+                intent.putExtra("groupItem", group);
+                startActivityForResult(intent, REQUEST_CODE);
+            }
+        });
+    }
+
+    /**
+     * Clears remindersList and adds each reminder from the group into it.
+     */
+    protected void copyRemindersFromGroup() {
+        remindersList.clear();
+
+        for (Reminder reminder : group.getRemindersList()) {
+            remindersList.add(reminder);
+        }
+    }
+
+    /**
+     * When a new reminder is created, it is added to the list and associated with the group.
+     *
+     * @param requestCode
+     * @param resultCode
+     * @param data
+     */
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+
+        if (resultCode == Activity.RESULT_OK) {
+            newReminder = (Reminder) data.getSerializableExtra("newReminder");
+            remindersList.add(newReminder);
+            group.addReminder(newReminder);
+            remindersAdapter.notifyDataSetChanged();
+
+            //New intent to send the updated group to the group list.
+            Intent resultIntent = new Intent();
+            resultIntent.putExtra("updatedGroup", group);
+            setResult(Activity.RESULT_OK, resultIntent);
+        }
+    }
+}

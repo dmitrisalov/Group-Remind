@@ -1,0 +1,25 @@
+package com.example.dsalov2.simplenotifications;
+
+import java.io.Serializable;
+
+/**
+ * Created by dsalov2 on 5/2/2017.
+ */
+
+public class User implements Serializable {
+    private String email;
+    private String firebaseKey;
+
+    public User(String email, String firebaseKey) {
+        this.email = email;
+        this.firebaseKey = firebaseKey;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public String getFirebaseKey() {
+        return firebaseKey;
+    }
+}

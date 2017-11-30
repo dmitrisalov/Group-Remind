@@ -1,0 +1,101 @@
+package com.example.dsalov2.simplenotifications;
+
+import android.app.Activity;
+import android.content.Intent;
+import android.support.v7.app.AppCompatActivity;
+import android.os.Bundle;
+import android.util.Log;
+import android.view.View;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
+import android.widget.Button;
+import android.widget.ListView;
+
+import java.util.ArrayList;
+
+public class MainActivity extends AppCompatActivity implements View.OnClickListener {
+    private final int REQUEST_CODE = 0;
+    public static ArrayList<Group> groupsList = new ArrayList<>();
+    ListView groupsListView;
+    ArrayAdapter<Group> groupsAdapter;
+
+    Button newGroupButton;
+
+    int selectedGroupPosition;
+    Group selectedGroup;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+
+        //Creates ListView for groups and sets it's adapter to groupsList.
+        groupsListView = (ListView) findViewById(R.id.groupsListView);
+        groupsAdapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, groupsList);
+        groupsListView.setAdapter(groupsAdapter);
+
+        newGroupButton = (Button) findViewById(R.id.newGroupButton);
+
+        newGroupButton.setOnClickListener(this);
+
+        groupsListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+
+            //Passes the Group object information to GroupDetailsActivity.
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                selectedGroupPosition = position;
+                selectedGroup = groupsAdapter.getItem(position);
+
+                Intent intent = new Intent(MainActivity.this, GroupDetailsActivity.class);
+                intent.putExtra("selectedGroup", selectedGroup);
+                intent.putExtra("selectedGroupPosition", selectedGroupPosition);
+                startActivityForResult(intent, REQUEST_CODE);
+            }
+        });
+    }
+
+    /**
+     * Contains the methods to handle clicking on views.
+     *
+     * @param view
+     */
+    @Override
+    public void onClick(View view) {
+
+        if (view == newGroupButton) {
+            Intent intent = new Intent(MainActivity.this, NewGroupActivity.class);
+            startActivity(intent);
+        }
+    }
+
+    /**
+     * When a new reminder is created, it is added to the list and associated with the group.
+     *
+     * @param requestCode
+     * @param resultCode
+     * @param data
+     */
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+
+        if (resultCode == Activity.RESULT_OK) {
+            selectedGroup = (Group) data.getSerializableExtra("updatedGroup");
+            groupsList.remove(selectedGroupPosition);
+            groupsList.add(0, selectedGroup);
+        }
+        else {
+            groupsList.clear();
+        }
+
+        groupsAdapter.notifyDataSetChanged();
+    }
+
+    /**
+     * Updates the groupsList when returning to MainActivity.
+     */
+    @Override
+    protected void onResume() {
+        super.onResume();
+        groupsAdapter.notifyDataSetChanged();
+    }
+}

@@ -1,0 +1,79 @@
+package com.example.dsalov2.simplenotifications;
+
+import android.support.v7.app.AppCompatActivity;
+import android.os.Bundle;
+import android.view.View;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.Toast;
+
+/**
+ * TODO Implement finding users.
+ *
+ * Created by dsalov2 on 04/30/2017.
+ */
+public class NewGroupActivity extends AppCompatActivity implements View.OnClickListener {
+    Button createGroupButton;
+    EditText nameEditText;
+
+    String nameOfGroup;
+
+    Group group;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_new_group);
+
+        createGroupButton = (Button) findViewById(R.id.createGroupButton);
+        nameEditText = (EditText) findViewById(R.id.nameEditText);
+
+        createGroupButton.setOnClickListener(this);
+    }
+
+    /**
+     * Contains the methods to handle clicking on views.
+     *
+     * @param view
+     */
+    @Override
+    public void onClick(View view) {
+
+        if (view == createGroupButton) {
+
+            if (hasValidName()) {
+                nameOfGroup = nameEditText.getText().toString();
+                group = new Group(nameOfGroup);
+
+                addGroupToList();
+                finish();
+            }
+        }
+    }
+
+    /**
+     * Adds the name of the group to the list of groups in MainActivity.
+     */
+    protected void addGroupToList() {
+        Toast.makeText(this, "Group created.", Toast.LENGTH_SHORT).show();
+
+        MainActivity.groupsList.add(0, group);
+    }
+
+    /**
+     * Checks to see if there is something entered as a group name.
+     *
+     * @return boolean.
+     */
+    protected boolean hasValidName() {
+
+        if (nameEditText.getText().toString().isEmpty()) {
+            Toast.makeText(this, "You must provide a group name.", Toast.LENGTH_SHORT).show();
+
+            return false;
+        }
+        else {
+            return true;
+        }
+    }
+}

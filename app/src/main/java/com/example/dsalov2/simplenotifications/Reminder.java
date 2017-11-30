@@ -1,0 +1,97 @@
+package com.example.dsalov2.simplenotifications;
+
+import java.io.Serializable;
+
+/**
+ * Created by dsalov2 on 4/10/2017.
+ *
+ * This class holds all of the information to be displayed and used for reminders.
+ */
+public class Reminder implements Serializable {
+    private String details;
+    private String firebaseKey;
+    private boolean hasNotification;
+    private int dayOfMonth;
+    private int month;
+    private int year;
+    private int hourOfDay;
+    private int minute;
+
+    private String formattedDate;
+    private String formattedTime;
+
+    public Reminder(String details, String firebaseKey) {
+        this.details = details;
+        this.firebaseKey = firebaseKey;
+        hasNotification = false;
+    }
+
+    public Reminder(String details, int dayOfMonth, int month, int year, int hourOfDay, int minute,
+                    String formattedDate, String formattedTime, String firebaseKey) {
+        this.details = details;
+        this.dayOfMonth = dayOfMonth;
+        this.month = month;
+        this.year = year;
+        this.hourOfDay = hourOfDay;
+        this.minute = minute;
+        this.formattedDate = formattedDate;
+        this.formattedTime = formattedTime;
+        this.firebaseKey = firebaseKey;
+        hasNotification = true;
+    }
+
+    public String getDetails() {
+        return details;
+    }
+
+    public int getDayOfMonth() {
+        return dayOfMonth;
+    }
+
+    public int getMonth() {
+        return month;
+    }
+
+    public int getYear() {
+        return year;
+    }
+
+    public int getHourOfDay() {
+        return hourOfDay;
+    }
+
+    public int getMinute() {
+        return minute;
+    }
+
+    public String getFormattedDate() {
+        return formattedDate;
+    }
+
+    public String getFormattedTime() {
+        return formattedTime;
+    }
+
+    public String getFirebaseKey() {
+        return firebaseKey;
+    }
+
+    public boolean hasNotification() {
+        return hasNotification;
+    }
+
+    /**
+     * Represents the reminder either with or without a notification.
+     *
+     * @return String
+     */
+    @Override
+    public String toString() {
+        if (hasNotification) {
+            return "[" + formattedDate + "] " + details;
+        }
+        else {
+            return details;
+        }
+    }
+}

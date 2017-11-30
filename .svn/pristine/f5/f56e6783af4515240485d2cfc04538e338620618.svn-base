@@ -1,0 +1,213 @@
+package com.example.dsalov2.simplenotifications;
+
+import android.app.Activity;
+import android.content.Intent;
+import android.support.v7.app.AppCompatActivity;
+import android.os.Bundle;
+import android.view.View;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
+import android.widget.Button;
+import android.widget.ListView;
+import android.widget.Toast;
+
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
+
+import java.util.ArrayList;
+
+/**
+ * Created by dsalov2 on 04/30/2017.
+ *
+ * The main window that displays the groups for the logged-in user.
+ */
+public class MainActivity extends AppCompatActivity implements View.OnClickListener {
+    private final int REQUEST_CODE = 0; //Default request code for getting a result.
+
+    private static ArrayList<Group> groupsList = new ArrayList<>();
+
+    private boolean firstTimeOpened = true;
+    private int selectedGroupPosition;  //Holds the position on the list of the clicked-on group.
+    private Group selectedGroup;        //Holds the Group from the list that was clicked on.
+    private User currentUser;           //The user that is currently using the app.
+
+    private Button newGroupButton;
+    private DatabaseReference reference = FirebaseDatabase.getInstance().getReference();
+    private ListView groupsListView;
+    private ArrayAdapter<Group> groupsAdapter;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+
+        //Creates ListView for groups and sets its adapter to groupsList.
+        groupsListView = (ListView) findViewById(R.id.groupsListView);
+        groupsAdapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, groupsList);
+        groupsListView.setAdapter(groupsAdapter);
+
+        newGroupButton = (Button) findViewById(R.id.newGroupButton);
+        newGroupButton.setOnClickListener(this);
+
+        //When a list item is clicked, the details for the group are displayed.
+        groupsListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                selectedGroupPosition = position;
+                selectedGroup = groupsAdapter.getItem(position);
+
+                Intent intent = new Intent(MainActivity.this, GroupDetailsActivity.class);
+                intent.putExtra("selectedGroup", selectedGroup);
+                intent.putExtra("selectedGroupPosition", selectedGroupPosition);
+                startActivityForResult(intent, REQUEST_CODE);
+            }
+        });
+
+        currentUser = (User) getIntent().getSerializableExtra("user");
+
+        if (firstTimeOpened) {
+            populateListView();
+        }
+    }
+
+    /**
+     * This method searches through the database to find the "groups" subtree in the user's node.
+     * Then, it calls createGroupsFromDatabase() to populate the ListView with pre-existing groups.
+     */
+    private void populateListView() {
+        reference.child("users").orderByChild("email").equalTo(currentUser.getEmail())
+                .addListenerForSingleValueEvent(new ValueEventListener() {
+
+                    @Override
+                    public void onDataChange(DataSnapshot dataSnapshot) {
+                        for (DataSnapshot userSnapshot : dataSnapshot.getChildren()) {
+                            for (DataSnapshot childSnapshot : userSnapshot.getChildren()) {
+
+                                //If there is a child other than 'email'.
+                                if (childSnapshot.getKey().equals("groups")) {
+                                    createGroupsFromDatabase(childSnapshot.getRef());
+                                }
+                            }
+                        }
+                    }
+
+                    @Override
+                    public void onCancelled(DatabaseError databaseError) {
+                        Toast.makeText(MainActivity.this, "An error occurred.", Toast.LENGTH_SHORT)
+                                .show();
+                    }
+                });
+    }
+
+    /**
+     * Gets all of the group names for the current user and adds these groups to the list view.
+     *
+     * @param groupsReference
+     */
+    private void createGroupsFromDatabase(DatabaseReference groupsReference) {
+        groupsReference.orderByChild("groupName").addListenerForSingleValueEvent(
+                new ValueEventListener() {
+
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                for (DataSnapshot childGroupSnapshot : dataSnapshot.getChildren()) {
+                    Group newGroup = new Group(childGroupSnapshot.child("groupName").getValue()
+                            .toString(), childGroupSnapshot.getKey(), new ArrayList<String>());
+
+                    addToGroupsList(newGroup);
+                    groupsAdapter.notifyDataSetChanged();
+                }
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+                Toast.makeText(MainActivity.this, "An error occurred.", Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    /**
+     * Adds a group to the top of groupsList.
+     *
+     * @param group
+     */
+    public static void addToGroupsList(Group group) {
+        groupsList.add(0, group);
+    }
+
+    /**
+     * Removes a group from groupsList at the selected position.
+     *
+     * @param position
+     */
+    public static void removeFromGroupsList(int position) {
+        groupsList.remove(position);
+    }
+
+    /**
+     * Returns the number of groups in groupsList.
+     *
+     * @return
+     */
+    public static int getNumGroups() {
+        return groupsList.size();
+    }
+
+    /**
+     * Contains the methods to handle clicking on views.
+     *
+     * @param view
+     */
+    @Override
+    public void onClick(View view) {
+        if (view == newGroupButton) {
+            if (firstTimeOpened) {
+                groupsList.clear();
+                groupsAdapter.notifyDataSetChanged();
+                firstTimeOpened = true;
+            }
+
+            Intent intent = new Intent(MainActivity.this, NewGroupActivity.class);
+            startActivity(intent);
+        }
+    }
+
+    /**
+     * When a new group is created, it is added to the list.
+     *
+     * @param requestCode
+     * @param resultCode
+     * @param data
+     */
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (resultCode == Activity.RESULT_OK) {
+            selectedGroup = (Group) data.getSerializableExtra("updatedGroup");
+            groupsList.remove(selectedGroupPosition);
+            addToGroupsList(selectedGroup);
+        }
+
+        groupsAdapter.notifyDataSetChanged();
+    }
+
+    /**
+     * Updates the groupsList when returning to MainActivity.
+     */
+    @Override
+    protected void onResume() {
+        super.onResume();
+        groupsAdapter.notifyDataSetChanged();
+    }
+
+    /**
+     * Keeps the user from going back to the log-in screen.
+     */
+    @Override
+    public void onBackPressed() {
+        moveTaskToBack(true);
+    }
+}
